@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAT 2026 Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   ROOT VARIABLES
+═══════════════════════════════════════════════════════════ */
+:root {
+  --bg: #f7f8fa; --surface: #ffffff; --surface2: #f1f3f7;
+  --border: #e4e7ed; --border2: #d0d5df;
+  --text: #111827; --text2: #4b5563; --text3: #9ca3af;
+  --accent: #2563eb; --accent-bg: #eff6ff; --accent-dim: rgba(37,99,235,.08);
+  --green: #16a34a; --green-bg: #f0fdf4;
+  --red: #dc2626; --red-bg: #fef2f2;
+  --yellow: #d97706; --yellow-bg: #fffbeb;
+  --purple: #7c3aed; --purple-bg: #f5f3ff;
+  --teal: #0d9488;
+  --radius: 8px; --radius-sm: 5px;
+  --shadow: 0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+  --font: 'Inter',system-ui,-apple-system,sans-serif;
+  --sidebar-w: 220px;
+}
+[data-theme="dark"] {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#222536;
+  --border:#2d3148; --border2:#3a3f5c;
+  --text:#f1f5f9; --text2:#94a3b8; --text3:#475569;
+  --accent-bg:#1e2a4a; --accent-dim:rgba(96,165,250,.1);
+  --green-bg:#0d2016; --red-bg:#1f0c0c;
+  --yellow-bg:#1f160a; --purple-bg:#1a1030;
+  --shadow:0 1px 4px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.2);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.3);
+}
+
+/* ═══════════════════════════════════════════════════════════ RESET */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font-family:var(--font);font-size:.875rem}
+input,select,textarea{font-family:var(--font);font-size:.875rem}
+svg{display:block}
+
+/* ═══════════════════════════════════════════════════════════ LAYOUT */
+#shell{display:flex;min-height:100vh}
+
+/* ── Sidebar ── */
+#sidebar{
+  width:var(--sidebar-w);min-height:100vh;
+  background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;z-index:50;
+  transition:transform .2s ease;
+}
+.sidebar-top{padding:18px 16px 12px;border-bottom:1px solid var(--border)}
+.brand{font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-.02em}
+.brand span{color:var(--accent)}
+.days-pill{margin-top:5px;font-size:.72rem;color:var(--text3);font-weight:500;display:flex;align-items:center;gap:5px}
+.days-pill b{color:var(--accent)}
+
+/* Sync status bar */
+.sync-bar{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 16px;font-size:.7rem;font-weight:500;
+  border-bottom:1px solid var(--border);
+  min-height:28px;
+}
+.sync-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sync-dot.synced {background:var(--green)}
+.sync-dot.syncing{background:var(--yellow);animation:pulse .8s infinite}
+.sync-dot.error  {background:var(--red)}
+.sync-dot.offline{background:var(--text3)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.sync-text{flex:1;color:var(--text3)}
+.sync-btn{font-size:.68rem;color:var(--accent);padding:1px 5px;border-radius:3px;background:var(--accent-dim)}
+.sync-btn:hover{opacity:.8}
+
+#nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:1px}
+.nav-btn{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius-sm);font-size:.825rem;font-weight:500;color:var(--text2);width:100%;text-align:left;transition:.15s}
+.nav-btn:hover{background:var(--surface2);color:var(--text)}
+.nav-btn.active{background:var(--accent-bg);color:var(--accent);font-weight:600}
+.nav-btn .badge{margin-left:auto;background:var(--red);color:#fff;font-size:.65rem;padding:1px 6px;border-radius:20px;font-weight:700}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-btn.active .nav-icon{opacity:1}
+
+.sidebar-bottom{padding:12px 8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.sb-btn{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius-sm);font-size:.78rem;color:var(--text3);width:100%;text-align:left;transition:.15s}
+.sb-btn:hover{background:var(--surface2);color:var(--text2)}
+
+/* ── Main ── */
+#main{flex:1;margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column}
+.page{display:none;flex:1;flex-direction:column;padding:28px 28px 40px}
+.page.active{display:flex}
+
+/* ── Mobile header ── */
+#mob-header{display:none;position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;align-items:center;gap:12px}
+#mob-toggle{padding:6px;border-radius:5px;font-size:1.1rem;color:var(--text2)}
+#mob-toggle:hover{background:var(--surface2)}
+
+/* ═══════════════════════════════════════════════════════════ SETUP OVERLAY */
+#setup-overlay{
+  position:fixed;inset:0;background:var(--bg);z-index:9000;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+#setup-overlay.hidden{display:none}
+.setup-card{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:12px;padding:28px;max-width:480px;width:100%;
+  box-shadow:var(--shadow);
+}
+.setup-logo{font-size:1.4rem;font-weight:700;margin-bottom:4px;letter-spacing:-.02em}
+.setup-logo span{color:var(--accent)}
+.setup-sub{font-size:.825rem;color:var(--text3);margin-bottom:22px;line-height:1.5}
+.setup-step{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;font-size:.8rem;color:var(--text2);line-height:1.5}
+.setup-step-num{min-width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.setup-sep{height:1px;background:var(--border);margin:18px 0}
+.pat-note{font-size:.72rem;color:var(--text3);background:var(--surface2);border-radius:5px;padding:8px 10px;line-height:1.5;margin-top:6px}
+.pat-note b{color:var(--text2)}
+.read-only-note{font-size:.72rem;color:var(--green);background:var(--green-bg);border-radius:5px;padding:8px 10px;margin-top:6px;line-height:1.5}
+
+/* ═══════════════════════════════════════════════════════════ COMMON */
+.page-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.page-hd h1{font-size:1.35rem;font-weight:700;letter-spacing:-.02em}
+.page-hd p{font-size:.825rem;color:var(--text3);margin-top:2px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.card-sm{padding:12px 14px}
+.card-title{font-size:.78rem;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.flex{display:flex}.flex-1{flex:1}.gap-sm{gap:8px}.gap-md{gap:14px}.wrap{flex-wrap:wrap}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-sm);font-size:.825rem;font-weight:500;border:1px solid transparent;transition:.15s;cursor:pointer}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn-primary:hover{opacity:.88}
+.btn-ghost{background:var(--surface2);color:var(--text2);border-color:var(--border)}.btn-ghost:hover{background:var(--border);color:var(--text)}
+.btn-danger{background:var(--red-bg);color:var(--red);border-color:rgba(220,38,38,.2)}.btn-danger:hover{opacity:.8}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+.btn-icon{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);color:var(--text3);background:var(--surface2);border:1px solid var(--border);transition:.15s}
+.btn-icon:hover{color:var(--text);background:var(--border)}
+
+.field{display:flex;flex-direction:column;gap:4px}
+.label{font-size:.78rem;font-weight:500;color:var(--text2)}
+.input,.select,.textarea{background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:7px 10px;border-radius:var(--radius-sm);width:100%;transition:.15s;outline:none}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.select option{background:var(--surface);color:var(--text)}
+.textarea{resize:vertical;min-height:70px;line-height:1.5}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-row.cols3{grid-template-columns:1fr 1fr 1fr}
+.form-row.cols4{grid-template-columns:repeat(4,1fr)}
+
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:20px}
+.tag-easy{background:var(--green-bg);color:var(--green)}
+.tag-medium{background:var(--yellow-bg);color:var(--yellow)}
+.tag-hard{background:var(--red-bg);color:var(--red)}
+.tag-blue{background:var(--accent-bg);color:var(--accent)}
+.tag-gray{background:var(--surface2);color:var(--text3)}
+
+.prog-wrap{display:flex;align-items:center;gap:8px}
+.prog-bar{flex:1;height:5px;background:var(--surface2);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;transition:width .4s ease;background:var(--accent)}
+.prog-pct{font-size:.72rem;font-weight:600;color:var(--text3);font-variant-numeric:tabular-nums;min-width:32px;text-align:right}
+.divider{height:1px;background:var(--border);margin:14px 0}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;gap:8px}
+.empty .ei{font-size:2rem;opacity:.4}.empty .et{font-size:.9rem;font-weight:600;color:var(--text2)}.empty .es{font-size:.8rem;color:var(--text3)}
+
+#toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.toast{padding:10px 14px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:var(--shadow);font-size:.825rem;min-width:220px;pointer-events:all;opacity:0;transform:translateX(10px);transition:.2s;display:flex;align-items:center;gap:8px}
+.toast.in{opacity:1;transform:translateX(0)}
+.toast.success{border-left:3px solid var(--green)}.toast.error{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--accent)}
+
+#modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:.15s}
+#modal-bg.open{opacity:1;pointer-events:all}
+#modal-box{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:22px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);transform:scale(.97);transition:.15s}
+#modal-bg.open #modal-box{transform:scale(1)}
+.modal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.modal-hd h3{font-size:1rem;font-weight:700}
+.modal-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
+
+/* ═══════════════════════════════════════════════════════════ DASHBOARD */
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.stat-val{font-size:1.6rem;font-weight:700;letter-spacing:-.03em;line-height:1;margin-top:2px}
+.stat-lbl{font-size:.72rem;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.stat-sub{font-size:.75rem;color:var(--text3);margin-top:4px}
+.subj-dash-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.sdc-name{font-size:.9rem;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sdc-rows{display:flex;flex-direction:column;gap:6px}
+.sdc-row{display:flex;align-items:center;gap:8px;font-size:.78rem}
+.sdc-rowlbl{width:72px;color:var(--text3);flex-shrink:0}
+.sdc-rowval{margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums;font-size:.75rem}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:60px}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.bar-body{width:100%;border-radius:3px 3px 0 0;transition:height .4s ease;min-height:2px}
+.bar-label{font-size:.65rem;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center}
+
+/* ═══════════════════════════════════════════════════════════ SUBJECTS */
+.subj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
+.subj-header{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;user-select:none;transition:.15s}
+.subj-header:hover{background:var(--surface2)}
+.subj-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.subj-name{font-size:.9rem;font-weight:700;flex:1}
+.subj-meta{font-size:.75rem;color:var(--text3);display:flex;align-items:center;gap:10px}
+.subj-chevron{font-size:.75rem;color:var(--text3);transition:transform .2s}
+.subj-card.open .subj-chevron{transform:rotate(180deg)}
+.subj-body{display:none;border-top:1px solid var(--border);padding:14px 16px}
+.subj-card.open .subj-body{display:block}
+.topic-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-bottom:10px}
+.topic-table th{text-align:left;padding:6px 8px;font-size:.68rem;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);background:var(--surface2)}
+.topic-table td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.topic-table tr:last-child td{border-bottom:none}
+.topic-table tr:hover td{background:var(--surface2)}
+.topic-row.complete td{opacity:.6}
+.topic-name-cell{font-weight:500;max-width:180px}
+.topic-note{font-size:.7rem;color:var(--text3);margin-top:1px}
+.counter{display:flex;align-items:center;gap:4px}
+.ctr-btn{width:20px;height:20px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:.12s;flex-shrink:0}
+.ctr-btn:hover{background:var(--border);color:var(--text)}
+.ctr-val{font-size:.8rem;font-weight:600;font-variant-numeric:tabular-nums;min-width:38px;text-align:center}
+.qs-tracker{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;margin-top:10px}
+.qs-tracker-title{font-size:.72rem;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.qs-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+.qs-name{flex:1;font-size:.8rem;color:var(--text2)}
+.qs-frac{font-size:.8rem;font-weight:600;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+
+/* ═══════════════════════════════════════════════════════════ PLANNER */
+.planner-hd{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.date-nav-btn{padding:6px 12px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--border);font-size:.8rem;font-weight:500;color:var(--text2);transition:.15s}
+.date-nav-btn:hover{background:var(--border);color:var(--text)}
+.date-nav-btn.today{background:var(--accent-bg);color:var(--accent);border-color:rgba(37,99,235,.2);font-weight:600}
+.date-display{font-size:1rem;font-weight:700;flex:1}
+.date-input{padding:6px 10px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border2);color:var(--text);font-size:.825rem;cursor:pointer;outline:none}
+.date-input:focus{border-color:var(--accent)}
+.unfinished-banner{background:var(--yellow-bg);border:1px solid rgba(217,119,6,.2);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px}
+.unfinished-banner h4{font-size:.78rem;font-weight:600;color:var(--yellow);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.uf-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(217,119,6,.1)}
+.uf-item:last-child{border-bottom:none}
+.uf-date{font-size:.7rem;color:var(--yellow);font-weight:600;min-width:60px}
+.uf-text{font-size:.8rem;flex:1;color:var(--text2)}
+.uf-done-btn{font-size:.72rem;padding:3px 8px;border-radius:20px;background:var(--green-bg);color:var(--green);border:1px solid rgba(22,163,74,.2);font-weight:600;cursor:pointer}
+.task-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;transition:.15s}
+.task-item.done{opacity:.5}
+.task-item.done .task-text{text-decoration:line-through;color:var(--text3)}
+.task-check{width:18px;height:18px;border-radius:4px;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-top:1px;transition:.12s}
+.task-check:hover{border-color:var(--accent)}
+.task-check.checked{background:var(--green);border-color:var(--green);color:#fff;font-size:.6rem;font-weight:700}
+.task-text{flex:1;font-size:.835rem;line-height:1.4}
+.task-tag-row{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap}
+.task-del{color:var(--text3);font-size:.9rem;padding:2px 5px;border-radius:4px;opacity:0;transition:.12s}
+.task-item:hover .task-del{opacity:1}
+.task-del:hover{background:var(--red-bg);color:var(--red)}
+.add-task-row{display:flex;gap:8px;margin-top:8px}
+.add-task-input{flex:1;padding:8px 12px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border2);color:var(--text);font-size:.835rem;outline:none;transition:.15s}
+.add-task-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+
+/* ═══════════════════════════════════════════════════════════ REVISION */
+.revision-layout{display:grid;grid-template-columns:280px 1fr;gap:16px;min-height:500px}
+.rev-pool{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.rev-pool h3{font-size:.8rem;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.rev-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;cursor:grab;font-size:.8rem;user-select:none;transition:.12s}
+.rev-chip:hover{border-color:var(--border2);background:var(--bg)}
+.rev-chip.dragging{opacity:.4}
+.rev-chip-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.rev-chip-name{flex:1;font-weight:500}
+.rev-chip-subj{font-size:.68rem;color:var(--text3)}
+.rev-cal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.rev-cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.rev-cal-title{font-size:.9rem;font-weight:700;flex:1}
+.rev-cal-nav button{padding:4px 10px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--border);font-size:.75rem;color:var(--text2);transition:.15s;cursor:pointer}
+.rev-cal-nav button:hover{background:var(--border)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day-name{font-size:.65rem;font-weight:600;color:var(--text3);text-align:center;padding:4px 0}
+.cal-day{min-height:72px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px;font-size:.68rem;color:var(--text3);position:relative;transition:.15s}
+.cal-day.today{border-color:var(--accent);background:var(--accent-bg)}
+.cal-day.other-month{opacity:.4}
+.cal-day.drag-over{background:var(--accent-dim);border-color:var(--accent);border-style:dashed}
+.cal-day-num{font-weight:600;color:var(--text2);margin-bottom:2px}
+.cal-day.today .cal-day-num{color:var(--accent)}
+.rev-event{background:var(--accent-bg);border:1px solid rgba(37,99,235,.2);border-radius:3px;padding:2px 4px;font-size:.62rem;font-weight:500;color:var(--accent);margin-bottom:2px;display:flex;align-items:center;gap:3px;cursor:pointer}
+.rev-event.done-ev{background:var(--green-bg);color:var(--green);border-color:rgba(22,163,74,.2);text-decoration:line-through;opacity:.7}
+.rev-event .ev-del{margin-left:auto;opacity:0;font-size:.65rem}
+.rev-event:hover .ev-del{opacity:1}
+
+/* ═══════════════════════════════════════════════════════════ MOCKS */
+.mock-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.mock-date-block{min-width:56px;text-align:center;background:var(--surface2);border-radius:var(--radius-sm);padding:8px 10px}
+.mock-date-d{font-size:1.4rem;font-weight:700;line-height:1;color:var(--text)}
+.mock-date-m{font-size:.68rem;color:var(--text3);font-weight:600;text-transform:uppercase}
+.mock-info{flex:1;min-width:180px}
+.mock-name{font-size:.9rem;font-weight:700;margin-bottom:4px}
+.mock-meta{font-size:.75rem;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap}
+.mock-scores{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
+.score-box{background:var(--surface2);border-radius:var(--radius-sm);padding:6px 10px;text-align:center;min-width:52px}
+.score-box .sv{font-size:1rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.score-box .sl{font-size:.65rem;color:var(--text3);text-transform:uppercase}
+.mock-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.spark{display:flex;align-items:flex-end;gap:3px;height:28px}
+.spark-bar{width:6px;background:var(--accent);border-radius:2px 2px 0 0;flex-shrink:0;opacity:.7;transition:.3s}
+
+/* ═══════════════════════════════════════════════════════════ RESPONSIVE */
+@media(max-width:900px){
+  #sidebar{transform:translateX(-100%)}
+  #sidebar.mob-open{transform:translateX(0);box-shadow:var(--shadow)}
+  #main{margin-left:0}
+  #mob-header{display:flex}
+  .revision-layout{grid-template-columns:1fr}
+  .g4{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  .page{padding:16px}
+  .form-row{grid-template-columns:1fr}
+  .form-row.cols3,.form-row.cols4{grid-template-columns:1fr 1fr}
+}
+
+/* Misc */
+.mt4{margin-top:4px}.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt20{margin-top:20px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}
+.fw6{font-weight:600}.fw7{font-weight:700}.fs-sm{font-size:.78rem}.fs-xs{font-size:.72rem}.muted{color:var(--text3)}
+.text-right{text-align:right}.text-center{text-align:center}
+.pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:600}
+.color-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════ SETUP OVERLAY ══════════════════════ -->
+<div id="setup-overlay">
+  <div class="setup-card">
+    <div class="setup-logo">CAT <span>2026</span> Tracker</div>
+    <div class="setup-sub">Connect to your GitHub repo to save data permanently.<br>Your data lives in a <code>data.json</code> file in your own repo.</div>
+
+    <div class="setup-step"><div class="setup-step-num">1</div><div>Create a <b>new public GitHub repository</b> — e.g. <code>cat-data</code><br><a href="https://github.com/new" target="_blank" style="color:var(--accent)">github.com/new →</a></div></div>
+    <div class="setup-step"><div class="setup-step-num">2</div><div>Create a <b>Personal Access Token</b> with <code>repo</code> scope (read + write)<br><a href="https://github.com/settings/tokens/new?description=CAT+Tracker&scopes=repo" target="_blank" style="color:var(--accent)">github.com/settings/tokens →</a></div></div>
+    <div class="setup-step"><div class="setup-step-num">3</div><div>Paste your details below. Token is stored <b>only in your browser</b> — never uploaded.</div></div>
+
+    <div class="setup-sep"></div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="form-row">
+        <div class="field"><label class="label">GitHub Username</label><input class="input" id="cfg-user" placeholder="your-username"></div>
+        <div class="field"><label class="label">Repository Name</label><input class="input" id="cfg-repo" placeholder="cat-data"></div>
+      </div>
+      <div class="field">
+        <label class="label">Personal Access Token (PAT)</label>
+        <input class="input" id="cfg-pat" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+        <div class="pat-note">🔒 <b>Stored only in your browser's localStorage.</b> Never sent anywhere except GitHub's own API. Don't share your browser profile.</div>
+      </div>
+    </div>
+
+    <div class="setup-sep"></div>
+    <div style="font-size:.78rem;color:var(--text3);margin-bottom:12px">
+      <b style="color:var(--text2)">Visitor mode:</b> If you just want to view (no editing), leave PAT empty and click "View Only".
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="setupSave()" style="flex:1">Connect & Start →</button>
+      <button class="btn btn-ghost" onclick="setupViewOnly()">View Only</button>
+    </div>
+    <div id="setup-error" style="color:var(--red);font-size:.78rem;margin-top:10px;display:none"></div>
+  </div>
+</div>
+
+<div id="shell">
+<!-- ══════════════════════ SIDEBAR ══════════════════════ -->
+<aside id="sidebar">
+  <div class="sidebar-top">
+    <div class="brand">CAT <span>2026</span></div>
+    <div class="days-pill">⏳ <b id="days-left">—</b> days remaining</div>
+  </div>
+
+  <!-- Sync status bar -->
+  <div class="sync-bar" id="sync-bar">
+    <div class="sync-dot offline" id="sync-dot"></div>
+    <span class="sync-text" id="sync-text">Not connected</span>
+    <button class="sync-btn" onclick="syncNow()" id="sync-now-btn" style="display:none">Sync</button>
+  </div>
+
+  <nav id="nav">
+    <button class="nav-btn active" onclick="go('dashboard')" data-page="dashboard">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-btn" onclick="go('subjects')" data-page="subjects">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h12M2 8h12M2 13h7"/></svg>
+      Subjects
+    </button>
+    <button class="nav-btn" onclick="go('planner')" data-page="planner">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 1v2M11 1v2M2 6h12"/></svg>
+      Planner
+      <span class="badge" id="overdue-badge" style="display:none">!</span>
+    </button>
+    <button class="nav-btn" onclick="go('revision')" data-page="revision">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 8A6 6 0 1 1 8 2"/><path d="M14 2v4h-4"/></svg>
+      Revision
+    </button>
+    <button class="nav-btn" onclick="go('mocks')" data-page="mocks">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+      Mocks
+    </button>
+  </nav>
+  <div class="sidebar-bottom">
+    <button class="sb-btn" onclick="toggleTheme()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v1M8 14v1M1 8h1M14 8h1M3.5 3.5l.7.7M11.8 11.8l.7.7M3.5 12.5l.7-.7M11.8 4.2l.7-.7"/></svg>
+      <span id="theme-lbl">Dark Mode</span>
+    </button>
+    <button class="sb-btn" onclick="openSettings()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg>
+      Settings / Reconnect
+    </button>
+    <button class="sb-btn" onclick="exportLocal()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1v8M5 6l3 3 3-3M2 11v3h12v-3"/></svg>
+      Download Backup
+    </button>
+  </div>
+</aside>
+
+<!-- Mobile header -->
+<header id="mob-header">
+  <button id="mob-toggle" onclick="document.getElementById('sidebar').classList.toggle('mob-open')">☰</button>
+  <span style="font-size:.95rem;font-weight:700">CAT 2026 Tracker</span>
+</header>
+
+<!-- ══════════════════════ MAIN ══════════════════════════ -->
+<main id="main">
+
+<!-- Loading screen -->
+<div id="loading-screen" class="page active" style="align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <div style="font-size:1.5rem;font-weight:700;letter-spacing:-.02em">CAT <span style="color:var(--accent)">2026</span></div>
+  <div id="loading-msg" style="font-size:.825rem;color:var(--text3)">Connecting to GitHub…</div>
+  <div style="width:180px;height:3px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:4px">
+    <div id="loading-bar" style="height:100%;background:var(--accent);border-radius:99px;width:0%;transition:width .4s ease"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<section id="page-dashboard" class="page">
+  <div class="page-hd"><div><h1>Dashboard</h1><p id="dash-date" class="muted"></p></div></div>
+  <div class="g4 mb16" id="dash-stats"></div>
+  <div class="g2 mb16" id="dash-charts"></div>
+  <div id="dash-subjects"></div>
+</section>
+
+<!-- SUBJECTS -->
+<section id="page-subjects" class="page">
+  <div class="page-hd">
+    <div><h1>Subjects & Topics</h1><p class="muted">Add your own subjects and topics</p></div>
+    <button class="btn btn-primary" onclick="openAddSubject()">+ Add Subject</button>
+  </div>
+  <div id="subjects-list"></div>
+</section>
+
+<!-- PLANNER -->
+<section id="page-planner" class="page">
+  <div class="page-hd"><div><h1>Daily Planner</h1><p class="muted">Your to-do list per day</p></div></div>
+  <div class="planner-hd">
+    <button class="date-nav-btn" onclick="plannerShiftDay(-1)">← Prev</button>
+    <button class="date-nav-btn today" onclick="plannerGoToday()">Today</button>
+    <button class="date-nav-btn" onclick="plannerShiftDay(1)">Next →</button>
+    <div class="date-display" id="planner-date-display"></div>
+    <input type="date" class="date-input" id="planner-date-pick" onchange="plannerSetDate(this.value)">
+  </div>
+  <div id="unfinished-section"></div>
+  <div id="planner-tasks"></div>
+  <div class="add-task-row mt8">
+    <input type="text" class="add-task-input" id="new-task-input" placeholder="Add a task for this day… press Enter" onkeydown="if(event.key==='Enter')addTask()">
+    <button class="btn btn-primary btn-sm" onclick="addTask()">Add</button>
+    <button class="btn btn-ghost btn-sm" onclick="openAddTaskModal()">+ Details</button>
+  </div>
+</section>
+
+<!-- REVISION -->
+<section id="page-revision" class="page">
+  <div class="page-hd"><div><h1>Revision Planner</h1><p class="muted">Drag completed topics onto calendar dates</p></div></div>
+  <div class="revision-layout">
+    <div class="rev-pool">
+      <h3>Completed Topics</h3>
+      <p class="muted fs-xs mb8">Drag onto a date →</p>
+      <div id="rev-pool-list"></div>
+    </div>
+    <div class="rev-cal">
+      <div class="rev-cal-nav">
+        <button onclick="revCalShift(-1)">← Prev</button>
+        <div class="rev-cal-title" id="rev-cal-title"></div>
+        <button onclick="revCalShift(1)">Next →</button>
+      </div>
+      <div class="cal-grid" id="cal-day-names"></div>
+      <div class="cal-grid mt4" id="cal-grid"></div>
+    </div>
+  </div>
+  <div class="card mt16" id="revision-log">
+    <div class="card-title">Revision Schedule</div>
+    <div id="revision-list"></div>
+  </div>
+</section>
+
+<!-- MOCKS -->
+<section id="page-mocks" class="page">
+  <div class="page-hd">
+    <div><h1>Mock Tests</h1><p class="muted">Scores, percentile, rank</p></div>
+    <button class="btn btn-primary" onclick="openAddMock()">+ Add Mock</button>
+  </div>
+  <div class="g4 mb16" id="mock-stats"></div>
+  <div id="mock-list"></div>
+</section>
+
+</main>
+</div>
+
+<!-- Modal -->
+<div id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div id="modal-box">
+    <div class="modal-hd"><h3 id="modal-title">Modal</h3><button class="btn-icon" onclick="closeModal()">✕</button></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+<div id="toasts"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   GITHUB SYNC ENGINE
+   Reads/writes data.json in user's GitHub repo via API.
+   PAT stored only in localStorage — never uploaded.
+═══════════════════════════════════════════════════════════ */
+const GH = {
+  get cfg() {
+    return JSON.parse(localStorage.getItem('cat26_gh_cfg') || 'null');
+  },
+  saveCfg(cfg) {
+    localStorage.setItem('cat26_gh_cfg', JSON.stringify(cfg));
+  },
+
+  apiBase() {
+    const c = this.cfg;
+    return `https://api.github.com/repos/${c.user}/${c.repo}/contents/data.json`;
+  },
+
+  headers() {
+    const c = this.cfg;
+    const h = { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' };
+    if (c?.pat) h['Authorization'] = `token ${c.pat}`;
+    return h;
+  },
+
+  // Fetch data.json from GitHub
+  async fetch() {
+    const c = this.cfg;
+    if (!c?.user || !c?.repo) throw new Error('Not configured');
+    const res = await fetch(this.apiBase(), { headers: this.headers() });
+    if (res.status === 404) return null; // file doesn't exist yet
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    const json = await res.json();
+    // content is base64 encoded
+    const decoded = JSON.parse(atob(json.content.replace(/\n/g,'')));
+    return { data: decoded, sha: json.sha };
+  },
+
+  // Write data.json to GitHub (create or update)
+  async push(dataObj, sha) {
+    const c = this.cfg;
+    if (!c?.pat) throw new Error('No write access (view-only mode)');
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(dataObj, null, 2))));
+    const body = {
+      message: `CAT Tracker update — ${new Date().toISOString().slice(0,16)}`,
+      content,
+      ...(sha ? { sha } : {}),
+    };
+    const res = await fetch(this.apiBase(), {
+      method: 'PUT',
+      headers: this.headers(),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    const json = await res.json();
+    return json.content.sha; // new SHA for next update
+  },
+
+  // Validate token by fetching user info
+  async validateToken(user, repo, pat) {
+    const res = await fetch(`https://api.github.com/repos/${user}/${repo}`, {
+      headers: { 'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (res.status === 404) throw new Error(`Repo "${user}/${repo}" not found. Make sure the repo exists and is public.`);
+    if (res.status === 401) throw new Error('Token is invalid or expired.');
+    if (!res.ok) throw new Error(`GitHub error: ${res.status}`);
+    return true;
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════
+   APP STATE
+═══════════════════════════════════════════════════════════ */
+const initDB = () => ({
+  subjects: [], topics: [], tasks: {}, mocks: [], revisions: [],
+  settings: { theme: 'light' },
+});
+
+let DB = initDB();
+let ghSha = null;           // current SHA of data.json on GitHub
+let isDirty = false;        // unsaved changes
+let saveTimer = null;       // debounce timer
+let isReadOnly = false;     // view-only mode (no PAT)
+let isSyncing = false;
+
+/* ── Sync status UI ── */
+function setSyncStatus(status, text) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-text');
+  const btn = document.getElementById('sync-now-btn');
+  if (!dot) return;
+  dot.className = `sync-dot ${status}`;
+  txt.textContent = text;
+  btn.style.display = (status === 'error' || status === 'offline') ? '' : 'none';
+}
+
+/* ── Debounced save ── */
+function save() {
+  if (isReadOnly) return;
+  isDirty = true;
+  setSyncStatus('syncing', 'Saving…');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(pushToGitHub, 1200); // wait 1.2s after last change
+}
+
+async function pushToGitHub() {
+  if (!isDirty || isReadOnly || isSyncing) return;
+  isSyncing = true;
+  setSyncStatus('syncing', 'Saving to GitHub…');
+  try {
+    ghSha = await GH.push(DB, ghSha);
+    isDirty = false;
+    setSyncStatus('synced', `Saved ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`);
+  } catch (e) {
+    setSyncStatus('error', 'Save failed — retry?');
+    toast(`Save failed: ${e.message}`, 'error');
+  } finally {
+    isSyncing = false;
+  }
+}
+
+async function syncNow() {
+  clearTimeout(saveTimer);
+  isDirty = true;
+  await pushToGitHub();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SETUP FLOW
+═══════════════════════════════════════════════════════════ */
+async function setupSave() {
+  const user = document.getElementById('cfg-user').value.trim();
+  const repo = document.getElementById('cfg-repo').value.trim();
+  const pat  = document.getElementById('cfg-pat').value.trim();
+  const errEl = document.getElementById('setup-error');
+  errEl.style.display = 'none';
+
+  if (!user || !repo) { errEl.textContent = 'Enter your GitHub username and repo name.'; errEl.style.display=''; return; }
+  if (!pat) { errEl.textContent = 'Enter your Personal Access Token for write access.'; errEl.style.display=''; return; }
+
+  const btn = document.querySelector('#setup-overlay .btn-primary');
+  btn.textContent = 'Connecting…'; btn.disabled = true;
+
+  try {
+    await GH.validateToken(user, repo, pat);
+    GH.saveCfg({ user, repo, pat });
+    await bootApp();
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = '';
+    btn.textContent = 'Connect & Start →'; btn.disabled = false;
+  }
+}
+
+function setupViewOnly() {
+  const user = document.getElementById('cfg-user').value.trim();
+  const repo = document.getElementById('cfg-repo').value.trim();
+  const errEl = document.getElementById('setup-error');
+  if (!user || !repo) { errEl.textContent = 'Enter the GitHub username and repo name to view.'; errEl.style.display=''; return; }
+  GH.saveCfg({ user, repo, pat: '' });
+  bootApp();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════════════════ */
+async function bootApp() {
+  document.getElementById('setup-overlay').classList.add('hidden');
+  showPage('loading-screen');
+  setLoadingProgress(20, 'Fetching your data from GitHub…');
+
+  const cfg = GH.cfg;
+  isReadOnly = !cfg?.pat;
+
+  if (isReadOnly) {
+    setSyncStatus('offline', 'View only (no token)');
+  }
+
+  try {
+    setLoadingProgress(50, 'Loading data…');
+    const result = await GH.fetch();
+    if (result) {
+      DB = { ...initDB(), ...result.data };
+      ghSha = result.sha;
+      setSyncStatus('synced', `Loaded from GitHub`);
+    } else {
+      // No data.json yet — first time, push empty DB
+      DB = initDB();
+      setLoadingProgress(70, 'First time setup — creating data file…');
+      if (!isReadOnly) {
+        ghSha = await GH.push(DB, null);
+        setSyncStatus('synced', 'Ready (new file created)');
+      }
+    }
+  } catch (e) {
+    setSyncStatus('error', 'Load failed');
+    toast(`Could not load data: ${e.message}`, 'error');
+    DB = initDB(); // use empty local data
+  }
+
+  // Apply theme
+  applyTheme(DB.settings?.theme || 'light');
+  setLoadingProgress(100, 'Done!');
+
+  setTimeout(() => {
+    go('dashboard');
+  }, 300);
+}
+
+function setLoadingProgress(pct, msg) {
+  const bar = document.getElementById('loading-bar');
+  const txt = document.getElementById('loading-msg');
+  if (bar) bar.style.width = pct + '%';
+  if (txt) txt.textContent = msg;
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+id)?.classList.add('active');
+  // Special case for loading screen
+  if (id === 'loading-screen') {
+    document.getElementById('loading-screen').classList.add('active');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SETTINGS MODAL (reconnect / change token)
+═══════════════════════════════════════════════════════════ */
+function openSettings() {
+  const c = GH.cfg || {};
+  openModal('Settings', `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="form-row">
+        <div class="field"><label class="label">GitHub Username</label><input class="input" id="s-user" value="${c.user||''}"></div>
+        <div class="field"><label class="label">Repository Name</label><input class="input" id="s-repo" value="${c.repo||''}"></div>
+      </div>
+      <div class="field">
+        <label class="label">Personal Access Token</label>
+        <input class="input" id="s-pat" type="password" value="${c.pat||''}" placeholder="Leave blank for view-only">
+        <div class="pat-note">🔒 Stored only in your browser. Token needs <code>repo</code> scope.</div>
+      </div>
+      ${isReadOnly ? `<div class="read-only-note">⚠️ Currently in view-only mode. Add a token to enable editing.</div>` : ''}
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save & Reconnect</button>
+    </div>`);
+}
+
+async function saveSettings() {
+  const user = document.getElementById('s-user')?.value.trim();
+  const repo = document.getElementById('s-repo')?.value.trim();
+  const pat  = document.getElementById('s-pat')?.value.trim();
+  if (!user || !repo) { toast('Enter username and repo','error'); return; }
+  GH.saveCfg({ user, repo, pat });
+  closeModal();
+  toast('Reconnecting…','info');
+  await bootApp();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ROUTER
+═══════════════════════════════════════════════════════════ */
+let currentPage = 'dashboard';
+const pageRenders = {
+  dashboard: renderDashboard,
+  subjects: renderSubjects,
+  planner: renderPlanner,
+  revision: renderRevision,
+  mocks: renderMocks,
+};
+
+function go(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+  currentPage = page;
+  if (window.innerWidth < 900) document.getElementById('sidebar').classList.remove('mob-open');
+  pageRenders[page]?.();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST & MODAL
+═══════════════════════════════════════════════════════════ */
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.classList.add('in'), 10);
+  setTimeout(() => { el.classList.remove('in'); setTimeout(() => el.remove(), 200); }, 2800);
+}
+
+function openModal(title, html) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-bg').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
+
+function confirm2(msg, cb) {
+  openModal('Confirm', `<p style="margin-bottom:16px;font-size:.875rem;color:var(--text2)">${msg}</p>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-danger btn-sm" onclick="closeModal();(${cb})()">Delete</button>
+  </div>`);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   THEME
+═══════════════════════════════════════════════════════════ */
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('theme-lbl').textContent = t === 'dark' ? 'Light Mode' : 'Dark Mode';
+}
+function toggleTheme() {
+  const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(t);
+  if (!DB.settings) DB.settings = {};
+  DB.settings.theme = t;
+  save();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COUNTDOWN
+═══════════════════════════════════════════════════════════ */
+function updateCountdown() {
+  const diff = Math.ceil((new Date('2026-11-29') - new Date()) / 86400000);
+  const el = document.getElementById('days-left');
+  if (el) el.textContent = diff > 0 ? diff : 'Exam!';
+}
+updateCountdown();
+
+/* ═══════════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════════ */
+const uid = () => Math.random().toString(36).slice(2, 10);
+const today = () => new Date().toISOString().split('T')[0];
+const addDays = (d, n) => { const x = new Date(d+'T00:00:00'); x.setDate(x.getDate()+n); return x.toISOString().split('T')[0]; };
+const fmtDateFull = d => { if(!d) return ''; return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); };
+const fmtDateShort = d => { if(!d) return ''; return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'}); };
+const subjectColors = ['#2563eb','#16a34a','#d97706','#7c3aed','#0d9488','#dc2626','#db2777','#ea580c'];
+const nextColor = () => subjectColors[DB.subjects.length % subjectColors.length];
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════════════ */
+function renderDashboard() {
+  document.getElementById('dash-date').textContent = fmtDateFull(today());
+  const topics = DB.topics, mocks = DB.mocks;
+  const totalTopics = topics.length;
+  const doneTopics  = topics.filter(t => t.theoryComplete).length;
+  const totalQs     = topics.reduce((s,t) => s+(t.totalQuestions||0), 0);
+  const doneQs      = topics.reduce((s,t) => s+(t.doneQuestions||0), 0);
+  const mocksDone   = mocks.filter(m => m.attempted).length;
+  const todayTasks  = DB.tasks[today()] || [];
+  const doneTasks   = todayTasks.filter(t => t.done).length;
+
+  document.getElementById('dash-stats').innerHTML = [
+    {val:totalTopics, lbl:'Total Topics', sub:`${doneTopics} theory complete`},
+    {val:`${doneQs}/${totalQs}`, lbl:'Questions Done', sub:'across all topics'},
+    {val:`${mocksDone}/${mocks.length}`, lbl:'Mocks Attempted', sub:`${mocks.filter(m=>m.analysed).length} analysed`},
+    {val:`${doneTasks}/${todayTasks.length||0}`, lbl:"Today's Tasks", sub:`${(todayTasks.length||0)-doneTasks} pending`},
+  ].map(s => `<div class="stat-card"><div class="stat-lbl">${s.lbl}</div><div class="stat-val">${s.val}</div><div class="stat-sub">${s.sub}</div></div>`).join('');
+
+  const subjects = DB.subjects;
+  if (!subjects.length) {
+    document.getElementById('dash-charts').innerHTML = `<div class="card"><div class="empty"><div class="ei">📚</div><div class="et">No subjects yet</div><div class="es">Go to Subjects → Add Subject</div></div></div>`;
+    document.getElementById('dash-subjects').innerHTML = '';
+    return;
+  }
+
+  const maxQs = Math.max(1, ...subjects.map(s => DB.topics.filter(t=>t.subjectId===s.id).reduce((a,t)=>a+(t.totalQuestions||0),0)));
+  const maxTests = Math.max(1, ...subjects.map(s => DB.topics.filter(t=>t.subjectId===s.id).reduce((a,t)=>a+(t.totalTests||0),0)));
+
+  const qBarHtml = subjects.map(s => {
+    const sts = DB.topics.filter(t=>t.subjectId===s.id);
+    const done = sts.reduce((a,t)=>a+(t.doneQuestions||0),0);
+    const total= sts.reduce((a,t)=>a+(t.totalQuestions||0),0);
+    const h = total>0 ? Math.round((done/maxQs)*52) : 0;
+    return `<div class="bar-col">
+      <div style="height:52px;display:flex;align-items:flex-end"><div class="bar-body" style="height:${h}px;background:${s.color}"></div></div>
+      <div class="bar-label" style="color:${s.color};font-weight:600">${done}</div>
+      <div class="bar-label">${s.name.slice(0,8)}</div></div>`;
+  }).join('');
+
+  const tBarHtml = subjects.map(s => {
+    const sts = DB.topics.filter(t=>t.subjectId===s.id);
+    const done = sts.reduce((a,t)=>a+(t.doneTests||0),0);
+    const total= sts.reduce((a,t)=>a+(t.totalTests||0),0);
+    const h = total>0 ? Math.round((done/maxTests)*52) : 0;
+    return `<div class="bar-col">
+      <div style="height:52px;display:flex;align-items:flex-end"><div class="bar-body" style="height:${h}px;background:${s.color};opacity:.75"></div></div>
+      <div class="bar-label" style="color:${s.color};font-weight:600">${done}/${total}</div>
+      <div class="bar-label">${s.name.slice(0,8)}</div></div>`;
+  }).join('');
+
+  const scoredMocks = mocks.filter(m=>m.score?.total).slice(-6);
+  const maxScore = Math.max(1,...scoredMocks.map(m=>m.score.total));
+  const sparkHtml = scoredMocks.map(m=>`<div class="spark-bar" style="height:${Math.round((m.score.total/maxScore)*26)}px" title="${m.name}: ${m.score.total}"></div>`).join('');
+
+  document.getElementById('dash-charts').innerHTML = `
+    <div class="card">
+      <div class="card-title">Questions Done (per subject)</div>
+      <div class="bar-chart">${qBarHtml||'<span class="muted fs-xs">No data</span>'}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tests Done (per subject)</div>
+      <div class="bar-chart">${tBarHtml||'<span class="muted fs-xs">No data</span>'}</div>
+      ${scoredMocks.length?`<div class="divider"></div><div class="card-title">Mock Score Trend</div><div class="spark">${sparkHtml}</div>`:''}
+    </div>`;
+
+  document.getElementById('dash-subjects').innerHTML = `<div class="g3">${
+    subjects.map(s => {
+      const sts = DB.topics.filter(t=>t.subjectId===s.id);
+      const mk = (done,total) => ({done,total,pct:total>0?Math.round((done/total)*100):0});
+      const c = mk(sts.reduce((a,t)=>a+(t.doneClasses||0),0), sts.reduce((a,t)=>a+(t.totalClasses||0),0));
+      const ts= mk(sts.reduce((a,t)=>a+(t.doneTests||0),0),   sts.reduce((a,t)=>a+(t.totalTests||0),0));
+      const qs= mk(sts.reduce((a,t)=>a+(t.doneQuestions||0),0),sts.reduce((a,t)=>a+(t.totalQuestions||0),0));
+      const py= mk(sts.reduce((a,t)=>a+(t.donePYQ||0),0),     sts.reduce((a,t)=>a+(t.totalPYQ||0),0));
+      const done = sts.filter(t=>t.theoryComplete).length;
+      const row = (lbl,o) => `<div class="sdc-row">
+        <span class="sdc-rowlbl">${lbl}</span>
+        <div class="prog-wrap flex-1"><div class="prog-bar"><div class="prog-fill" style="width:${o.pct}%;background:${s.color}"></div></div></div>
+        <span class="sdc-rowval">${o.done}/${o.total}</span></div>`;
+      return `<div class="subj-dash-card">
+        <div class="sdc-name"><div class="color-dot" style="background:${s.color}"></div>${s.name}<span class="tag tag-gray" style="margin-left:auto">${done}/${sts.length}</span></div>
+        <div class="sdc-rows">${row('Classes',c)}${row('Tests',ts)}${row('Questions',qs)}${py.total>0?row('PYQ',py):''}</div>
+      </div>`;
+    }).join('')}</div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SUBJECTS
+═══════════════════════════════════════════════════════════ */
+function renderSubjects() {
+  const el = document.getElementById('subjects-list');
+  if (!DB.subjects.length) { el.innerHTML=`<div class="empty"><div class="ei">📚</div><div class="et">No subjects yet</div><div class="es">Click "+ Add Subject" above</div></div>`; return; }
+  el.innerHTML = DB.subjects.map(s => renderSubjectCard(s)).join('');
+}
+
+function renderSubjectCard(s) {
+  const topics = DB.topics.filter(t => t.subjectId === s.id);
+  const totalQsDone  = topics.reduce((a,t)=>a+(t.doneQuestions||0),0);
+  const totalQsTotal = topics.reduce((a,t)=>a+(t.totalQuestions||0),0);
+
+  const tableHtml = topics.length ? `
+    <table class="topic-table">
+      <thead><tr>
+        <th>Topic</th><th>Difficulty</th><th>Classes</th><th>Tests</th><th>PYQ</th><th>Questions</th><th>Theory</th><th style="text-align:right">Actions</th>
+      </tr></thead>
+      <tbody>${topics.map(t=>renderTopicRow(t,s)).join('')}</tbody>
+    </table>
+    <div class="qs-tracker">
+      <div class="qs-tracker-title">📊 ${s.name} — Question Tracker</div>
+      ${topics.filter(t=>t.totalQuestions>0).map(t=>{
+        const pct=t.totalQuestions>0?Math.round((t.doneQuestions/t.totalQuestions)*100):0;
+        return `<div class="qs-row">
+          <span class="qs-name">${t.name}</span>
+          <div class="prog-bar" style="width:100px"><div class="prog-fill" style="width:${pct}%;background:${s.color}"></div></div>
+          <span class="qs-frac">${t.doneQuestions||0}/${t.totalQuestions||0}</span></div>`;
+      }).join('')}
+      <div class="divider"></div>
+      <div class="qs-row">
+        <span class="qs-name fw6">Total ${s.name}</span>
+        <div class="prog-bar" style="width:100px"><div class="prog-fill" style="width:${totalQsTotal>0?Math.round((totalQsDone/totalQsTotal)*100):0}%;background:${s.color}"></div></div>
+        <span class="qs-frac fw6">${totalQsDone}/${totalQsTotal}</span></div>
+    </div>` : `<div class="empty" style="padding:20px 0"><div class="es">No topics yet.</div></div>`;
+
+  return `<div class="subj-card" id="subj-${s.id}">
+    <div class="subj-header" onclick="toggleSubject('${s.id}')">
+      <div class="subj-dot" style="background:${s.color}"></div>
+      <span class="subj-name">${s.name}</span>
+      <span class="subj-meta"><span>${topics.length} topics</span><span>${totalQsDone}/${totalQsTotal} qs</span></span>
+      <div style="display:flex;gap:6px;margin-left:8px" onclick="event.stopPropagation()">
+        <button class="btn btn-ghost btn-sm" onclick="openAddTopic('${s.id}')">+ Topic</button>
+        <button class="btn-icon" onclick="openEditSubject('${s.id}')">✏️</button>
+        <button class="btn-icon" onclick="deleteSubjectConfirm('${s.id}')">🗑</button>
+      </div>
+      <span class="subj-chevron">▾</span>
+    </div>
+    <div class="subj-body">${tableHtml}</div>
+  </div>`;
+}
+
+function renderTopicRow(t, s) {
+  const diffTag = {Easy:'tag-easy',Medium:'tag-medium',Hard:'tag-hard'}[t.difficulty]||'tag-gray';
+  const pct = t.totalClasses>0?Math.round((t.doneClasses/t.totalClasses)*100):0;
+  return `<tr class="topic-row ${t.theoryComplete?'complete':''}" id="tr-${t.id}">
+    <td class="topic-name-cell"><div>${t.name}</div>${t.notes?`<div class="topic-note">${t.notes}</div>`:''}</td>
+    <td><span class="tag ${diffTag}">${t.difficulty||'—'}</span></td>
+    <td><div class="counter">
+      <button class="ctr-btn" onclick="adj('${t.id}','doneClasses',-1)">−</button>
+      <span class="ctr-val">${t.doneClasses||0}/${t.totalClasses||0}</span>
+      <button class="ctr-btn" onclick="adj('${t.id}','doneClasses',1)">+</button>
+    </div>
+    <div style="margin-top:3px"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:${pct}%;background:${s.color}"></div></div></div></td>
+    <td><div class="counter">
+      <button class="ctr-btn" onclick="adj('${t.id}','doneTests',-1)">−</button>
+      <span class="ctr-val">${t.doneTests||0}/${t.totalTests||0}</span>
+      <button class="ctr-btn" onclick="adj('${t.id}','doneTests',1)">+</button>
+    </div></td>
+    <td><div class="counter">
+      <button class="ctr-btn" onclick="adj('${t.id}','donePYQ',-1)">−</button>
+      <span class="ctr-val">${t.donePYQ||0}/${t.totalPYQ||0}</span>
+      <button class="ctr-btn" onclick="adj('${t.id}','donePYQ',1)">+</button>
+    </div></td>
+    <td><div class="counter">
+      <button class="ctr-btn" onclick="adj('${t.id}','doneQuestions',-5)">−</button>
+      <span class="ctr-val">${t.doneQuestions||0}/${t.totalQuestions||0}</span>
+      <button class="ctr-btn" onclick="adj('${t.id}','doneQuestions',5)">+</button>
+    </div></td>
+    <td><button onclick="toggleTheory('${t.id}')" class="btn btn-sm ${t.theoryComplete?'btn-primary':'btn-ghost'}" style="font-size:.72rem;padding:3px 8px">${t.theoryComplete?'✓ Done':'Mark Done'}</button></td>
+    <td style="text-align:right"><div style="display:flex;gap:4px;justify-content:flex-end">
+      <button class="btn-icon" onclick="openEditTopic('${t.id}')">✏️</button>
+      <button class="btn-icon" onclick="deleteTopicConfirm('${t.id}')">🗑</button>
+    </div></td>
+  </tr>`;
+}
+
+function toggleSubject(id) { document.getElementById('subj-'+id)?.classList.toggle('open'); }
+
+function adj(topicId, field, delta) {
+  const t = DB.topics.find(x=>x.id===topicId); if(!t) return;
+  const maxMap = {doneClasses:'totalClasses',doneTests:'totalTests',donePYQ:'totalPYQ',doneQuestions:'totalQuestions'};
+  const max = t[maxMap[field]] ?? 9999;
+  t[field] = Math.max(0, Math.min(max, (t[field]||0) + delta));
+  save(); renderSubjects();
+  document.getElementById('subj-'+t.subjectId)?.classList.add('open');
+}
+
+function toggleTheory(id) {
+  const t = DB.topics.find(x=>x.id===id); if(!t) return;
+  t.theoryComplete = !t.theoryComplete;
+  if (t.theoryComplete && t.totalClasses>0) t.doneClasses = t.totalClasses;
+  save(); renderSubjects();
+  document.getElementById('subj-'+t.subjectId)?.classList.add('open');
+  toast(t.theoryComplete ? `✓ ${t.name} marked complete!` : `${t.name} unmarked`, 'success');
+}
+
+let selectedColor = '';
+function openAddSubject() {
+  openModal('Add Subject', `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="field"><label class="label">Subject Name</label><input class="input" id="s-name" placeholder="e.g. Quants" autofocus></div>
+      <div class="field"><label class="label">Color</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="color-picker">
+          ${subjectColors.map(c=>`<div onclick="selectColor('${c}')" data-color="${c}" style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;border:2px solid transparent;transition:.12s"></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveSubject()">Add</button>
+    </div>`);
+  selectedColor = nextColor(); highlightColor(selectedColor);
+}
+
+function selectColor(c) { selectedColor = c; highlightColor(c); }
+function highlightColor(c) { document.querySelectorAll('#color-picker div').forEach(d=>{d.style.border=d.dataset.color===c?'2px solid var(--text)':'2px solid transparent';}); }
+
+function saveSubject() {
+  const name = document.getElementById('s-name')?.value.trim();
+  if(!name){toast('Enter subject name','error');return;}
+  DB.subjects.push({id:uid(),name,color:selectedColor||nextColor()});
+  save(); closeModal(); renderSubjects(); toast('Subject added!','success');
+}
+
+function openEditSubject(id) {
+  const s=DB.subjects.find(x=>x.id===id); if(!s) return;
+  openModal('Edit Subject',`
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="field"><label class="label">Subject Name</label><input class="input" id="es-name" value="${s.name}"></div>
+      <div class="field"><label class="label">Color</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="color-picker">
+          ${subjectColors.map(c=>`<div onclick="selectColor('${c}')" data-color="${c}" style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;border:2px solid transparent;transition:.12s"></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="updateSubject('${id}')">Save</button>
+    </div>`);
+  selectedColor=s.color; highlightColor(s.color);
+}
+function updateSubject(id) {
+  const s=DB.subjects.find(x=>x.id===id); if(!s) return;
+  s.name=document.getElementById('es-name')?.value.trim()||s.name;
+  s.color=selectedColor||s.color;
+  save(); closeModal(); renderSubjects(); toast('Updated','success');
+}
+function deleteSubjectConfirm(id) { const s=DB.subjects.find(x=>x.id===id); confirm2(`Delete "${s?.name}" and all its topics?`,`()=>{deleteSubject('${id}')}`); }
+function deleteSubject(id) { DB.subjects=DB.subjects.filter(x=>x.id!==id); DB.topics=DB.topics.filter(x=>x.subjectId!==id); save(); renderSubjects(); toast('Deleted','info'); }
+
+function openAddTopic(subjectId) {
+  openModal(`Add Topic`,`
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="field"><label class="label">Topic Name *</label><input class="input" id="t-name" placeholder="e.g. Time & Work" autofocus></div>
+      <div class="form-row">
+        <div class="field"><label class="label">Difficulty</label><select class="select" id="t-diff"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></div>
+        <div class="field"><label class="label">Total Classes</label><input class="input" id="t-classes" type="number" min="0" placeholder="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label class="label">Total Tests</label><input class="input" id="t-tests" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label class="label">Total PYQs</label><input class="input" id="t-pyq" type="number" min="0" placeholder="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label class="label">Total Questions (practice)</label><input class="input" id="t-qs" type="number" min="0" placeholder="0"></div>
+        <div class="field"><label class="label">Notes (optional)</label><input class="input" id="t-notes" placeholder="e.g. EG Module 2"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveTopic('${subjectId}')">Add Topic</button>
+    </div>`);
+}
+
+function saveTopic(subjectId) {
+  const name=document.getElementById('t-name')?.value.trim();
+  if(!name){toast('Enter topic name','error');return;}
+  DB.topics.push({id:uid(),subjectId,name,
+    difficulty:document.getElementById('t-diff')?.value||'Medium',
+    totalClasses:parseInt(document.getElementById('t-classes')?.value)||0, doneClasses:0,
+    totalTests:parseInt(document.getElementById('t-tests')?.value)||0, doneTests:0,
+    totalPYQ:parseInt(document.getElementById('t-pyq')?.value)||0, donePYQ:0,
+    totalQuestions:parseInt(document.getElementById('t-qs')?.value)||0, doneQuestions:0,
+    notes:document.getElementById('t-notes')?.value.trim()||'', theoryComplete:false,
+  });
+  save(); closeModal(); renderSubjects();
+  document.getElementById('subj-'+subjectId)?.classList.add('open');
+  toast('Topic added!','success');
+}
+
+function openEditTopic(id) {
+  const t=DB.topics.find(x=>x.id===id); if(!t) return;
+  openModal('Edit Topic',`
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="field"><label class="label">Topic Name</label><input class="input" id="et-name" value="${t.name}"></div>
+      <div class="form-row">
+        <div class="field"><label class="label">Difficulty</label><select class="select" id="et-diff">${['Easy','Medium','Hard'].map(d=>`<option ${t.difficulty===d?'selected':''}>${d}</option>`).join('')}</select></div>
+        <div class="field"><label class="label">Total Classes</label><input class="input" id="et-classes" type="number" value="${t.totalClasses||0}"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label class="label">Total Tests</label><input class="input" id="et-tests" type="number" value="${t.totalTests||0}"></div>
+        <div class="field"><label class="label">Total PYQs</label><input class="input" id="et-pyq" type="number" value="${t.totalPYQ||0}"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label class="label">Total Questions</label><input class="input" id="et-qs" type="number" value="${t.totalQuestions||0}"></div>
+        <div class="field"><label class="label">Notes</label><input class="input" id="et-notes" value="${t.notes||''}"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="updateTopic('${id}')">Save</button>
+    </div>`);
+}
+function updateTopic(id) {
+  const t=DB.topics.find(x=>x.id===id); if(!t) return;
+  t.name=document.getElementById('et-name')?.value.trim()||t.name;
+  t.difficulty=document.getElementById('et-diff')?.value||t.difficulty;
+  t.totalClasses=parseInt(document.getElementById('et-classes')?.value)||0;
+  t.totalTests=parseInt(document.getElementById('et-tests')?.value)||0;
+  t.totalPYQ=parseInt(document.getElementById('et-pyq')?.value)||0;
+  t.totalQuestions=parseInt(document.getElementById('et-qs')?.value)||0;
+  t.notes=document.getElementById('et-notes')?.value.trim()||'';
+  save(); closeModal(); renderSubjects();
+  document.getElementById('subj-'+t.subjectId)?.classList.add('open');
+  toast('Updated','success');
+}
+function deleteTopicConfirm(id) { const t=DB.topics.find(x=>x.id===id); confirm2(`Delete topic "${t?.name}"?`,`()=>{deleteTopic('${id}')}`); }
+function deleteTopic(id) { const t=DB.topics.find(x=>x.id===id); const sub=t?.subjectId; DB.topics=DB.topics.filter(x=>x.id!==id); save(); renderSubjects(); if(sub) document.getElementById('subj-'+sub)?.classList.add('open'); toast('Deleted','info'); }
+
+/* ═══════════════════════════════════════════════════════════
+   PLANNER
+═══════════════════════════════════════════════════════════ */
+let plannerDate = today();
+
+function renderPlanner() {
+  document.getElementById('planner-date-display').textContent = fmtDateFull(plannerDate);
+  document.getElementById('planner-date-pick').value = plannerDate;
+
+  const unfinished = [];
+  Object.entries(DB.tasks).forEach(([d,tasks])=>{ if(d<plannerDate) tasks.filter(t=>!t.done).forEach(t=>unfinished.push({...t,date:d})); });
+  const ufEl = document.getElementById('unfinished-section');
+  if (unfinished.length) {
+    ufEl.innerHTML=`<div class="unfinished-banner">
+      <h4>⚠️ Unfinished from previous days (${unfinished.length})</h4>
+      ${unfinished.slice(0,8).map(t=>`<div class="uf-item">
+        <span class="uf-date">${fmtDateShort(t.date)}</span>
+        <span class="uf-text">${t.text}</span>
+        <button class="uf-done-btn" onclick="markUFDone('${t.date}','${t.id}')">✓ Done</button>
+      </div>`).join('')}
+      ${unfinished.length>8?`<div style="font-size:.72rem;color:var(--yellow);margin-top:6px">+${unfinished.length-8} more…</div>`:''}
+    </div>`;
+    document.getElementById('overdue-badge').style.display='';
+    document.getElementById('overdue-badge').textContent=unfinished.length;
+  } else {
+    ufEl.innerHTML='';
+    document.getElementById('overdue-badge').style.display='none';
+  }
+
+  const tasks = DB.tasks[plannerDate]||[];
+  const el = document.getElementById('planner-tasks');
+  if (!tasks.length) { el.innerHTML=`<div class="empty" style="padding:28px 0"><div class="ei">📋</div><div class="et">No tasks for this day</div><div class="es">Type below to add one</div></div>`; return; }
+  el.innerHTML = tasks.map(t => {
+    const subj = DB.subjects.find(s=>s.id===t.subjectId);
+    return `<div class="task-item ${t.done?'done':''}" id="task-${t.id}">
+      <div class="task-check ${t.done?'checked':''}" onclick="toggleTask('${plannerDate}','${t.id}')">${t.done?'✓':''}</div>
+      <div style="flex:1">
+        <div class="task-text">${t.text}</div>
+        <div class="task-tag-row">
+          ${subj?`<span class="pill" style="background:${subj.color}22;color:${subj.color}">${subj.name}</span>`:''}
+          ${t.tag?`<span class="tag tag-gray">${t.tag}</span>`:''}
+        </div>
+      </div>
+      <button class="task-del" onclick="deleteTask('${plannerDate}','${t.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleTask(date,id) { const tasks=DB.tasks[date]||[]; const t=tasks.find(x=>x.id===id); if(t){t.done=!t.done;save();renderPlanner();} }
+function markUFDone(date,id) { const tasks=DB.tasks[date]||[]; const t=tasks.find(x=>x.id===id); if(t){t.done=true;save();renderPlanner();toast('Done ✓','success');} }
+function deleteTask(date,id) { if(!DB.tasks[date]) return; DB.tasks[date]=DB.tasks[date].filter(x=>x.id!==id); save(); renderPlanner(); }
+
+function addTask() {
+  const input=document.getElementById('new-task-input');
+  const text=input?.value.trim(); if(!text) return;
+  if(!DB.tasks[plannerDate]) DB.tasks[plannerDate]=[];
+  DB.tasks[plannerDate].push({id:uid(),text,done:false,tag:'',subjectId:null});
+  save(); input.value=''; renderPlanner();
+}
+
+function openAddTaskModal() {
+  openModal('Add Task',`
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="field"><label class="label">Task *</label><textarea class="textarea" id="atm-text" rows="2" placeholder="What to do?"></textarea></div>
+      <div class="form-row">
+        <div class="field"><label class="label">Subject (optional)</label>
+          <select class="select" id="atm-subj"><option value="">— none —</option>${DB.subjects.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label class="label">Tag (optional)</label><input class="input" id="atm-tag" placeholder="e.g. Mock, Revision"></div>
+      </div>
+      <div class="field"><label class="label">Date</label><input class="input" type="date" id="atm-date" value="${plannerDate}"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveModalTask()">Add</button>
+    </div>`);
+}
+
+function saveModalTask() {
+  const text=document.getElementById('atm-text')?.value.trim(); if(!text){toast('Enter task','error');return;}
+  const date=document.getElementById('atm-date')?.value||plannerDate;
+  if(!DB.tasks[date]) DB.tasks[date]=[];
+  DB.tasks[date].push({id:uid(),text,done:false,subjectId:document.getElementById('atm-subj')?.value||null,tag:document.getElementById('atm-tag')?.value.trim()||''});
+  save(); closeModal(); if(date===plannerDate) renderPlanner(); toast('Task added!','success');
+}
+
+function plannerShiftDay(n) { plannerDate=addDays(plannerDate,n); renderPlanner(); }
+function plannerGoToday()    { plannerDate=today(); renderPlanner(); }
+function plannerSetDate(v)   { if(v){plannerDate=v; renderPlanner();} }
+
+/* ═══════════════════════════════════════════════════════════
+   REVISION
+═══════════════════════════════════════════════════════════ */
+let revCalYear=new Date().getFullYear(), revCalMonth=new Date().getMonth();
+
+function renderRevision() { renderRevPool(); renderRevCal(); renderRevList(); }
+
+function renderRevPool() {
+  const ct=DB.topics.filter(t=>t.theoryComplete);
+  const el=document.getElementById('rev-pool-list');
+  if(!ct.length){el.innerHTML=`<div class="empty" style="padding:20px 0"><div class="es">Mark topics as Theory Done in Subjects tab.</div></div>`;return;}
+  el.innerHTML=ct.map(t=>{
+    const s=DB.subjects.find(x=>x.id===t.subjectId);
+    return `<div class="rev-chip" draggable="true" ondragstart="revDragStart(event,'${t.id}')" ondragend="event.target.classList.remove('dragging')">
+      <div class="rev-chip-dot" style="background:${s?.color||'#888'}"></div>
+      <div><div class="rev-chip-name">${t.name}</div><div class="rev-chip-subj">${s?.name||''}</div></div>
+      <span class="tag ${{Easy:'tag-easy',Medium:'tag-medium',Hard:'tag-hard'}[t.difficulty]||'tag-gray'}">${t.difficulty||''}</span>
+    </div>`;
+  }).join('');
+}
+
+function revDragStart(e,topicId) { e.dataTransfer.setData('topicId',topicId); e.target.classList.add('dragging'); }
+
+function renderRevCal() {
+  document.getElementById('rev-cal-title').textContent=new Date(revCalYear,revCalMonth,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  document.getElementById('cal-day-names').innerHTML=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div class="cal-day-name">${d}</div>`).join('');
+  const first=new Date(revCalYear,revCalMonth,1);
+  const last=new Date(revCalYear,revCalMonth+1,0);
+  let startDow=first.getDay(); startDow=startDow===0?6:startDow-1;
+  const cells=[];
+  for(let i=0;i<startDow;i++){const d=new Date(revCalYear,revCalMonth,1-startDow+i);cells.push({date:d.toISOString().split('T')[0],other:true});}
+  for(let i=1;i<=last.getDate();i++){const d=new Date(revCalYear,revCalMonth,i);cells.push({date:d.toISOString().split('T')[0],other:false});}
+  const rem=7-cells.length%7; if(rem<7) for(let i=1;i<=rem;i++){const d=new Date(revCalYear,revCalMonth+1,i);cells.push({date:d.toISOString().split('T')[0],other:true});}
+  const td=today();
+  document.getElementById('cal-grid').innerHTML=cells.map(c=>{
+    const evs=DB.revisions.filter(r=>r.date===c.date);
+    const evHtml=evs.map(r=>{
+      const t=DB.topics.find(x=>x.id===r.topicId);
+      return `<div class="rev-event ${r.done?'done-ev':''}" onclick="toggleRevDone('${r.id}')">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px">${t?.name?.slice(0,10)||'?'}</span>
+        <span class="ev-del" onclick="event.stopPropagation();deleteRev('${r.id}')">✕</span></div>`;
+    }).join('');
+    const dd=c.date.split('-')[2];
+    return `<div class="cal-day ${c.other?'other-month':''} ${c.date===td?'today':''}"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="revDrop(event,'${c.date}')">
+      <div class="cal-day-num">${parseInt(dd)}</div>${evHtml}</div>`;
+  }).join('');
+}
+
+function revDrop(e,date) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  const topicId=e.dataTransfer.getData('topicId'); if(!topicId) return;
+  if(DB.revisions.find(r=>r.topicId===topicId&&r.date===date)){toast('Already scheduled','info');return;}
+  DB.revisions.push({id:uid(),topicId,date,done:false});
+  save(); renderRevCal(); renderRevList(); toast('Revision scheduled!','success');
+}
+
+function toggleRevDone(id) { const r=DB.revisions.find(x=>x.id===id); if(r){r.done=!r.done;save();renderRevCal();renderRevList();} }
+function deleteRev(id) { DB.revisions=DB.revisions.filter(x=>x.id!==id); save(); renderRevCal(); renderRevList(); }
+
+function renderRevList() {
+  const upcoming=DB.revisions.filter(r=>r.date>=today()).sort((a,b)=>a.date.localeCompare(b.date));
+  const past=DB.revisions.filter(r=>r.date<today()).sort((a,b)=>b.date.localeCompare(a.date));
+  const all=[...upcoming,...past.slice(0,5)];
+  const el=document.getElementById('revision-list');
+  if(!all.length){el.innerHTML=`<div class="empty"><div class="es">No revisions scheduled. Drag topics onto the calendar.</div></div>`;return;}
+  el.innerHTML=all.map(r=>{
+    const t=DB.topics.find(x=>x.id===r.topicId);
+    const s=t?DB.subjects.find(x=>x.id===t.subjectId):null;
+    const up=r.date>=today();
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
+      <div class="color-dot" style="background:${s?.color||'#888'}"></div>
+      <div style="flex:1"><div style="font-size:.835rem;font-weight:500;${r.done?'text-decoration:line-through;color:var(--text3)':''}">${t?.name||'?'}</div><div style="font-size:.72rem;color:var(--text3)">${s?.name||''}</div></div>
+      <span style="font-size:.75rem;color:${up?'var(--accent)':'var(--text3)'};font-weight:600">${fmtDateShort(r.date)}</span>
+      <button onclick="toggleRevDone('${r.id}')" class="btn btn-sm ${r.done?'btn-ghost':'btn-primary'}" style="font-size:.72rem;padding:3px 8px">${r.done?'✓ Done':'Mark Done'}</button>
+      <button onclick="deleteRev('${r.id}')" class="btn-icon">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function revCalShift(n){revCalMonth+=n;if(revCalMonth>11){revCalMonth=0;revCalYear++;}if(revCalMonth<0){revCalMonth=11;revCalYear--;}renderRevCal();}
+
+/* ═══════════════════════════════════════════════════════════
+   MOCKS
+═══════════════════════════════════════════════════════════ */
+function renderMocks() {
+  const mocks=[...DB.mocks].sort((a,b)=>a.date.localeCompare(b.date));
+  const att=mocks.filter(m=>m.attempted).length, ana=mocks.filter(m=>m.analysed).length;
+  const scored=mocks.filter(m=>m.score?.total);
+  const avg=scored.length?Math.round(scored.reduce((s,m)=>s+m.score.total,0)/scored.length):null;
+  document.getElementById('mock-stats').innerHTML=[
+    {val:mocks.length,lbl:'Total Scheduled',sub:'all providers'},
+    {val:att,lbl:'Attempted',sub:`${mocks.length-att} remaining`},
+    {val:ana,lbl:'Analysed',sub:`${att-ana} pending`},
+    {val:avg??'—',lbl:'Avg Score',sub:scored.length?`${scored.length} scored mocks`:'No scores yet'},
+  ].map(s=>`<div class="stat-card"><div class="stat-lbl">${s.lbl}</div><div class="stat-val">${s.val}</div><div class="stat-sub">${s.sub}</div></div>`).join('');
+  const el=document.getElementById('mock-list');
+  if(!mocks.length){el.innerHTML=`<div class="empty"><div class="ei">📝</div><div class="et">No mocks yet</div><div class="es">Add CL, IMS or any other mock</div></div>`;return;}
+  const upcoming=mocks.filter(m=>m.date>=today());
+  const past=mocks.filter(m=>m.date<today()).reverse();
+  const grp=(lbl,list)=>list.length?`<div class="muted fs-xs fw6" style="text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px">${lbl}</div>${list.map(renderMockCard).join('')}`:'';
+  el.innerHTML=grp('Upcoming',upcoming)+grp('Past',past);
+}
+
+function renderMockCard(m) {
+  const d=new Date(m.date+'T00:00:00');
+  const statusBadge=m.analysed?`<span class="tag tag-easy">✓ Analysed</span>`:m.attempted?`<span class="tag tag-medium">⏳ Analysis Pending</span>`:`<span class="tag tag-gray">Upcoming</span>`;
+  const scHtml=m.score?`<div class="mock-scores">
+    ${m.score.varc!=null?`<div class="score-box"><div class="sv">${m.score.varc}</div><div class="sl">VARC</div></div>`:''}
+    ${m.score.lrdi!=null?`<div class="score-box"><div class="sv">${m.score.lrdi}</div><div class="sl">LRDI</div></div>`:''}
+    ${m.score.quant!=null?`<div class="score-box"><div class="sv">${m.score.quant}</div><div class="sl">Quant</div></div>`:''}
+    ${m.score.total!=null?`<div class="score-box" style="background:var(--accent-bg)"><div class="sv" style="color:var(--accent)">${m.score.total}</div><div class="sl">Total</div></div>`:''}
+    ${m.score.percentile!=null?`<div class="score-box"><div class="sv">${m.score.percentile}%ile</div><div class="sl">Percentile</div></div>`:''}
+    ${m.score.rank!=null?`<div class="score-box"><div class="sv">#${m.score.rank}</div><div class="sl">Rank</div></div>`:''}
+  </div>`:'';
+  return `<div class="mock-card">
+    <div class="mock-date-block"><div class="mock-date-d">${d.getDate()}</div><div class="mock-date-m">${d.toLocaleString('en-IN',{month:'short'})}</div></div>
+    <div class="mock-info">
+      <div class="mock-name">${m.name}</div>
+      <div class="mock-meta"><span>${m.provider||'—'}</span><span>${m.type||'Full Mock'}</span>${statusBadge}</div>
+      ${scHtml}
+      ${m.notes?`<div style="font-size:.75rem;color:var(--text3);margin-top:4px;background:var(--surface2);padding:4px 8px;border-radius:4px">${m.notes}</div>`:''}
+      <div class="mock-actions">
+        ${!m.attempted?`<button class="btn btn-ghost btn-sm" onclick="markMockAttempted('${m.id}')">✓ Attempted</button>`:''}
+        ${m.attempted&&!m.analysed?`<button class="btn btn-ghost btn-sm" onclick="markMockAnalysed('${m.id}')">🔍 Analysed</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="openScoreModal('${m.id}')">📊 Scores</button>
+        <button class="btn btn-ghost btn-sm" onclick="openEditMock('${m.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMockConfirm('${m.id}')">✕</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openAddMock(){openModal('Add Mock',`
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="field"><label class="label">Mock Name *</label><input class="input" id="m-name" placeholder="e.g. CL Mock 1" autofocus></div>
+    <div class="form-row">
+      <div class="field"><label class="label">Date *</label><input class="input" type="date" id="m-date" value="${today()}"></div>
+      <div class="field"><label class="label">Provider</label><select class="select" id="m-provider"><option>CL</option><option>IMS</option><option>TIME</option><option>AIMCAT</option><option>Self</option><option>Other</option></select></div>
+    </div>
+    <div class="field"><label class="label">Type</label><select class="select" id="m-type"><option>Full Mock</option><option>Sectional — VARC</option><option>Sectional — LRDI</option><option>Sectional — Quant</option></select></div>
+    <div class="field"><label class="label">Notes</label><input class="input" id="m-notes" placeholder="Optional"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary btn-sm" onclick="saveMock()">Add</button>
+  </div>`);}
+
+function saveMock(){
+  const name=document.getElementById('m-name')?.value.trim(),date=document.getElementById('m-date')?.value;
+  if(!name||!date){toast('Fill required fields','error');return;}
+  DB.mocks.push({id:uid(),name,date,provider:document.getElementById('m-provider')?.value||'CL',type:document.getElementById('m-type')?.value||'Full Mock',notes:document.getElementById('m-notes')?.value.trim()||'',attempted:false,analysed:false,score:null});
+  save();closeModal();renderMocks();toast('Mock added!','success');
+}
+
+function openEditMock(id){const m=DB.mocks.find(x=>x.id===id);if(!m)return;
+  openModal('Edit Mock',`<div style="display:flex;flex-direction:column;gap:10px">
+    <div class="field"><label class="label">Mock Name</label><input class="input" id="em-name" value="${m.name}"></div>
+    <div class="form-row">
+      <div class="field"><label class="label">Date</label><input class="input" type="date" id="em-date" value="${m.date}"></div>
+      <div class="field"><label class="label">Provider</label><select class="select" id="em-provider">${['CL','IMS','TIME','AIMCAT','Self','Other'].map(p=>`<option ${m.provider===p?'selected':''}>${p}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label class="label">Notes</label><input class="input" id="em-notes" value="${m.notes||''}"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary btn-sm" onclick="updateMock('${id}')">Save</button>
+  </div>`);}
+
+function updateMock(id){const m=DB.mocks.find(x=>x.id===id);if(!m)return;m.name=document.getElementById('em-name')?.value.trim()||m.name;m.date=document.getElementById('em-date')?.value||m.date;m.provider=document.getElementById('em-provider')?.value||m.provider;m.notes=document.getElementById('em-notes')?.value.trim()||'';save();closeModal();renderMocks();toast('Updated','success');}
+function markMockAttempted(id){const m=DB.mocks.find(x=>x.id===id);if(m){m.attempted=true;save();renderMocks();toast('Marked attempted ✓','success');}}
+function markMockAnalysed(id){const m=DB.mocks.find(x=>x.id===id);if(m){m.analysed=true;save();renderMocks();toast('Analysis logged ✓','success');}}
+
+function openScoreModal(id){const m=DB.mocks.find(x=>x.id===id);if(!m)return;const s=m.score||{};
+  openModal(`Scores — ${m.name}`,`<div style="display:flex;flex-direction:column;gap:10px">
+    <div class="form-row cols4">
+      <div class="field"><label class="label">VARC</label><input class="input" id="sc-varc" type="number" value="${s.varc??''}"></div>
+      <div class="field"><label class="label">LRDI</label><input class="input" id="sc-lrdi" type="number" value="${s.lrdi??''}"></div>
+      <div class="field"><label class="label">Quant</label><input class="input" id="sc-quant" type="number" value="${s.quant??''}"></div>
+      <div class="field"><label class="label">Total</label><input class="input" id="sc-total" type="number" value="${s.total??''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label class="label">Percentile</label><input class="input" id="sc-pct" type="number" step=".01" value="${s.percentile??''}"></div>
+      <div class="field"><label class="label">Rank</label><input class="input" id="sc-rank" type="number" value="${s.rank??''}"></div>
+    </div>
+    <div class="field"><label class="label">Notes / Observations</label><textarea class="textarea" id="sc-notes" rows="2">${m.notes||''}</textarea></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary btn-sm" onclick="saveScore('${id}')">Save Scores</button>
+  </div>`);}
+
+function saveScore(id){
+  const m=DB.mocks.find(x=>x.id===id);if(!m)return;
+  const v=n=>{const x=parseFloat(document.getElementById(n)?.value);return isNaN(x)?null:x;};
+  m.score={varc:v('sc-varc'),lrdi:v('sc-lrdi'),quant:v('sc-quant'),total:v('sc-total'),percentile:v('sc-pct'),rank:v('sc-rank')};
+  m.notes=document.getElementById('sc-notes')?.value.trim()||'';
+  m.attempted=true;save();closeModal();renderMocks();toast('Scores saved!','success');
+}
+
+function deleteMockConfirm(id){const m=DB.mocks.find(x=>x.id===id);confirm2(`Delete "${m?.name}"?`,`()=>{deleteMock('${id}')}`);}
+function deleteMock(id){DB.mocks=DB.mocks.filter(x=>x.id!==id);save();renderMocks();toast('Deleted','info');}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPORT (local backup)
+═══════════════════════════════════════════════════════════ */
+function exportLocal(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`cat26-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href);
+  toast('Backup downloaded!','success');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT — check if already configured
+═══════════════════════════════════════════════════════════ */
+window.addEventListener('load', () => {
+  const cfg = GH.cfg;
+  if (cfg?.user && cfg?.repo) {
+    // Already configured — boot directly
+    bootApp();
+  }
+  // else: setup overlay is visible (default)
+});
+</script>
+</body>
+</html>
